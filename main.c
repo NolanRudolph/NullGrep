@@ -12,6 +12,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <regex.h>
+#include <math.h>
 #define MAXBUF 1000000
 #define MAXLINE 100000
 void inputConvert(char[]);
@@ -24,6 +25,7 @@ void count(void);
 void match(char *);
 void totalMatches(void);
 void formatGrep(char *);
+void contextFormat(char *);
 
 static tL = 0;  // Total Lines
 static tM = 0;  // Total Matches
@@ -33,7 +35,7 @@ static bC = 0;  // Total Bits
 char *buffer;  // Main Read Pointer
 int *lines;  // MUST Initialize After count()
 int *where;
-int argMatch[7]; 
+int argMatch[8]; 
 /*
  *argMatch used for matching argv[2]*
  Key: f, l, r, d, n, N, c
@@ -58,6 +60,8 @@ int main(int argc, char** argv)
     int i, j, isHelp;
     
     isHelp = argHandler(argv[1]);  // Evaluate Arguments (!!)
+    
+    printf("*****%d\n", argMatch[7]);
 
     if (argc == 2 && isHelp)  // Needed for --help
     {
@@ -137,7 +141,6 @@ int argHandler(char* arg)  // TESTED
         return 1;
     }
         
-    
     int i, j, k;
     
     for (i = 0; i < sizeof(argMatch)/sizeof(int); ++i)
@@ -147,8 +150,52 @@ int argHandler(char* arg)  // TESTED
     // Key: f, l, r, d, n, N, c
     char temp[7] = "flrdnNc";
     
+
+    int comp = 0;
+    int totalComp = 0;
+    int mult;
+    const int zMult = 10;
+    int powerTen = 0;
     for (j = 1; j < strlen(arg); ++j)
     {
+        /* Warning: Viewer Discretion -- Awful Reverse Base 10 Interpreter Algorithm */
+        /* This Checks for Number of Characters User Would Like to Shift*/
+        
+        if ((int)arg[j] > 47 && (int)arg[j] < 58)  // Between 1 And 9
+        {
+            ++powerTen;
+            while ((int)arg[++j] > 47 && (int)arg[j] < 58)
+            {
+                ++powerTen;
+            }
+            j -= powerTen;
+        }
+        
+        if (powerTen)
+        {
+            mult = (int)pow(10, powerTen - 1);
+            int partTen = 1;
+            
+            for ( ; partTen <= powerTen; j++)
+            {
+                if ((int)arg[j] - '0' == 0)
+                {
+                    mult = (int)pow(10, powerTen - ++partTen);
+                    continue;
+                }
+                else
+                {
+                    totalComp += ((int)arg[j] - '0') * mult;
+                }
+
+                mult = (int)pow(10, powerTen - ++partTen);
+            }
+                
+        }
+        argMatch[7] = totalComp;
+        
+        /* Awful Reverse Base 10 Interpreter Algorithm Finished*/
+        
         for (k = 0; k < strlen(temp); ++k)
         {
             if (arg[j] == temp[k])
@@ -168,7 +215,7 @@ void help(void)  // TESTED
     printf("\nWelcome to nolGrep! -- Your User-Friendly CLI Data Mining Command\n\n");
     printf("So you're having some troubles... Let me see if I can help!\n\n");
     printf("First and foremost, you MUST use this syntax:\n");
-    printf("Usage: nolGrep [ARGUMENTS] [FILE (only if 'f' in ARGUMENTS)] [PATTERN]  \n\n");
+    printf("Usage: nolGrep [ARGUMENTS (optional)] [FILE (optional)] [PATTERN]\n\n");
     printf("The FILE aspect uses /tmp/example.txt formatting, ONLY IF -f argument.\n");
     printf("The PATTERN aspect is what exactly you're trying to find.\n\n");
     printf("If you're new to terminal, you may be asking what ARGUMENTS are.\n");
