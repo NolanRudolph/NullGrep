@@ -15,7 +15,8 @@
 #define MAXBUF 1000000
 #define MAXLINE 100000
 void inputConvert(char[]);
-void argHandler(char *);
+void countLines(void);
+int argHandler(char *);
 void help(void);
 void delSpec(void);
 void transUpLow(void);
@@ -54,19 +55,23 @@ int main(int argc, char** argv)
     
     buffer = (char *)malloc(sizeof(char) * MAXBUF);
     
-    int i, j;
-    argHandler(argv[1]);  // Evaluate Arguments (!!)
+    int i, j, isHelp;
+    
+    isHelp = argHandler(argv[1]);  // Evaluate Arguments (!!)
 
-    if (argc == 2)  // Needed for --help
+    if (argc == 2 && isHelp)  // Needed for --help
     {
         return 0;
     }
+        
     if (argMatch[0]) // Is there's a file?
         inputConvert(argv[2]);  // If so, Send to Global Pointer (!!)
     
     else
         read(STDIN_FILENO, buffer, MAXBUF); // No File? Read Pipe / STDIN
     
+    countLines();
+    printf("Total Lines = %d\n", tL);
     
     if (argMatch[4])   // Was -n Passed as Argument?
         delSpec();     // If so, Delete All Unwanted ASCII values
@@ -89,36 +94,47 @@ int main(int argc, char** argv)
     lines = (int *)malloc(sizeof(int) * tL);
     where = (int *)malloc(sizeof(int) * MAXBUF);  // Be Weary: 0.002 GB space
     
-    if (argMatch[0])  // If There's a File, We Need to Pass Third Argument
+    if (argc == 2)  // User Only Gives Pattern
+    {
+        match(argv[1]);
+        totalMatches();  // Can Only Call After match()
+        printf("Total Matches: %d\n", tM);
+        formatGrep(argv[1]);
+    }
+    else if (argMatch[0])  // If There's a File, We Need to Pass Third Argument
+    {
         match(argv[3]);
-    else              // Otherwise, Pass Second Argument
-        match(argv[2]);
-    
-    
-    totalMatches();  // Can Only Call After match()
-    printf("Total Matches: %d\n", tM);
-    
-    
-    if (argMatch[0])  // If There's a File, We Need to Pass Third Argument
+        totalMatches();  // Can Only Call After match()
+        printf("Total Matches: %d\n", tM);
         formatGrep(argv[3]);
+    }
     else              // Otherwise, Pass Second Argument
+    {
+        match(argv[2]);
+        totalMatches();  // Can Only Call After match()
+        printf("Total Matches: %d\n", tM);
         formatGrep(argv[2]);
-    
-    
-    
+    }  
     
     free(buffer);
     free(lines);
     return 0;
 }
 
-void argHandler(char* arg)  // FLAWLESS
+void countLines(void)  // TESTED
+{
+    int i = 0;
+    while (i < strlen(buffer))  // Stop Once i Reaches buffer's Length
+        if (buffer[i++] == '\n' && tL++ != MAXLINE);  // Increments i and tL
+}
+
+int argHandler(char* arg)  // TESTED
 {
     /* Initialize all values of argMatch to 0 */
     if (strcmp(arg, "--help") == 0 || strcmp(arg, "-h") == 0)
     {
         help();
-        return;
+        return 1;
     }
         
     
@@ -142,7 +158,7 @@ void argHandler(char* arg)  // FLAWLESS
             }
         }
     }
-    return;
+    return 0;
 }
 
 void help(void)  // TESTED
@@ -190,8 +206,6 @@ void inputConvert(char file[])  // TESTED
     char c;
     while((c = getc(fp)) != EOF)
     {
-        if (c == '\n' && tL++ != MAXLINE)  // Increment our static tL variable
-            ;
         buffer[i++] = c;  // Set pre-incremented buffer address to character
     }
     return;
@@ -233,7 +247,7 @@ void transUpLow(void)  // TESTED
 
 void count(void)  // Must ALWAYS be called after argHandler() TESTED
 {
-    int i, file = argMatch[0];  // Let's Not Increment Again if File
+    int i;  // Let's Not Increment Again if File
     char c;
     cC = strlen(buffer);
     
@@ -241,9 +255,8 @@ void count(void)  // Must ALWAYS be called after argHandler() TESTED
     {
         if ((c = buffer[i]) == ' ' || c == '\n')  // Up wC if New Word
             ++wC;
-        if (!file && c == '\n')  // This is Why We Made Variable "File"
+        if (c == '\n')  // This is Why We Made Variable "File"
         {
-            ++tL;
             --cC;
         }
     }
