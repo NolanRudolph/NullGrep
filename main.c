@@ -61,7 +61,7 @@ int main(int argc, char** argv)
     
     isHelp = argHandler(argv[1]);  // Evaluate Arguments (!!)
     
-    printf("*****%d\n", argMatch[7]);
+    printf("Shift Number Passed In: %d\n", argMatch[7]);
 
     if (argc == 2 && isHelp)  // Needed for --help
     {
@@ -98,24 +98,25 @@ int main(int argc, char** argv)
     lines = (int *)malloc(sizeof(int) * tL);
     where = (int *)malloc(sizeof(int) * MAXBUF);  // Be Weary: 0.002 GB space
     
-    if (argc == 2)  // User Only Gives Pattern
+    /* Different Argument Routes */
+    if (argc == 2)         // User Only Gives Pattern
     {
         match(argv[1]);
-        totalMatches();  // Can Only Call After match()
+        totalMatches(); 
         printf("Total Matches: %d\n", tM);
         formatGrep(argv[1]);
     }
-    else if (argMatch[0])  // If There's a File, We Need to Pass Third Argument
+    else if (argMatch[0])  // If There's a File
     {
         match(argv[3]);
-        totalMatches();  // Can Only Call After match()
+        totalMatches();  
         printf("Total Matches: %d\n", tM);
         formatGrep(argv[3]);
     }
-    else              // Otherwise, Pass Second Argument
+    else                   // Everything Else
     {
         match(argv[2]);
-        totalMatches();  // Can Only Call After match()
+        totalMatches(); 
         printf("Total Matches: %d\n", tM);
         formatGrep(argv[2]);
     }  
@@ -333,7 +334,12 @@ void match(char *match)
 
             if (strlen(match) == m)  // Condition 1: Full Match is Met
             {
-                where[matchI++] = k - strlen(match);
+                if (argMatch[1])  // If -l (Left Shift) Parameter
+                    where[matchI++] = k - strlen(match) - argMatch[7];
+                else if (argMatch[2])  // If -r (Right Shift) Parameter
+                    where[matchI++] = k - strlen(match) + argMatch[7];
+                else  // Normal Grep
+                    where[matchI++] = k - strlen(match);
                 ++matched;
                 m = 0;
             }
@@ -385,6 +391,8 @@ void formatGrep(char *pattern)
                     ++matchI;
                     for (strI = 0; strI < strlen(pattern); ++strI, j++) 
                     {
+                        if (buffer[j] == '\n')  // If The Shift Were to Have "\n"
+                            break;
                         printf("\033[38;5;206m%c\033[0m", buffer[j]);  // PINK
                     }
                     --j;  // For Next Iteration
