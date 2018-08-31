@@ -384,7 +384,7 @@ void match(char *match)
     {
         matched = 0;
         
-        for (m = 0; (c = buffer[k]) != '\n'; ++k)  // Nest 1: Look Until "\n"
+        for (m = 0; c = buffer[k]; ++k)  // Nest 1: Look Until "\n"
         {
 
             if (strlen(match) == m)  // Condition 1: Full Match is Met
@@ -407,6 +407,8 @@ void match(char *match)
             {
                 m = 0;
             }
+            if (c == '\n')
+                break;
         }
         ++k;  // Otherwise Program will get caught on "\n"
         lines[j] += matched;  
