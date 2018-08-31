@@ -1,3 +1,4 @@
 end of the line is text
+this line text in middle
 text is start of line
 text

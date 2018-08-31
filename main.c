@@ -65,31 +65,32 @@ int main(int argc, char** argv)
     
     int isHelp, fill;
     
-    if(argc > 2)
-        isHelp = argHandler(argv[1]);  // Evaluate Arguments (!!)
-    else
+    isHelp = argHandler(argv[1]);  // Evaluate Arguments (!!)
+        
+    if (isHelp && argc == 2)  // Needed for --help
+    {
+        return 0;
+    }
+    if (!isHelp && argc == 2)
     {
         for (fill = 0; fill < sizeof(argMatch)/sizeof(int); ++fill)
             argMatch[fill] = 0;
     }
     
     /* End Assessing Arguments */
+
     
-    printf("Shift Number Passed In: %d\n", argMatch[7]);
-
-    if (argc == 2 && isHelp)  // Needed for --help
-    {
-        return 0;
-    }
-
     /* Fill Buffer */
 
     if (argMatch[0]) // Is there's a file?
+    {
         inputConvert(argv[2]);  // If so, Send to Global Pointer
+    }
     else
         read(STDIN_FILENO, buffer, MAXBUF); // No File? Read Pipe / STDIN
 
     /* End Fill Buffer */
+    
     
     /* Counting Total Number Of Lines */
     
@@ -97,6 +98,7 @@ int main(int argc, char** argv)
     printf("Total Lines = %d\n", tL);
     
     /* End Counting Total Number Of Lines */
+    
     
     /* Complying With User's Argument Specification */
     
@@ -116,6 +118,7 @@ int main(int argc, char** argv)
     }
     
     /* End Complying With User's Argument Specification */
+    
     
     /* Matching and Regex Argument Handling */
     
@@ -380,6 +383,10 @@ void match(char *match)
     int matched = 0;
     int matchI = 0;
     char c;
+    
+    /* Grep Shift Variables */
+    int temp, tempK, nC, remember;
+    
     for (j = 0; j < tL; ++j)  // Nest 0 : Lines of Files
     {
         matched = 0;
@@ -389,14 +396,65 @@ void match(char *match)
 
             if (strlen(match) == m)  // Condition 1: Full Match is Met
             {
+                /* Start Left Shift Grep */
                 if (argMatch[1])  // If -l (Left Shift) Parameter
-                    where[matchI++] = k - strlen(match) - argMatch[7];
+                {
+                    
+                    // word1 buffer word2   $ runMe -l5 buffer
+                    // ^     ^      ^
+                    //temp tempK
+                    
+                    tempK = k - strlen(match);
+                    temp = k - strlen(match) - argMatch[7];
+                    
+                    for (remember = 0 ; --tempK >= temp ; )
+                    {
+                        if ((nC = buffer[tempK]) == '\n')
+                        {
+                            break;
+                        }
+                        if ((nC = buffer[tempK]) > 96 && nC < 123)
+                        {
+//                            remember = tempK;
+                            printf("Found Match: %c\n", nC);
+                            remember = tempK;
+                        }
+                        else
+                        {
+                            printf("Could not find match.\n");
+                        }
+
+                    }
+                    if (remember)  // This Is a Good Place, let formatGrep know
+                        where[matchI++] = remember;
+                    else           // We Never Found A Place, Back To Normal Grep
+                    {
+                        where[matchI++] = k - strlen(match);
+                    }
+                    printf("\n");
+                }
+                /* End Left Shift Grep */
+                
+                /* Start Right Shift Grep */
                 else if (argMatch[2])  // If -r (Right Shift) Parameter
+                {
                     where[matchI++] = k - strlen(match) + argMatch[7];
-                else  // Normal Grep
+                }
+                /* End Right Shift Grep */
+                
+                /* Start Normal Grep */
+                else  
+                {
                     where[matchI++] = k - strlen(match);
+                }
+                /* End Normal Grep */
+                
+                /* End of If Statement Happenings*/
+                
                 ++matched;
                 m = 0;
+                
+                /* End of If Statement */
             }
             if (c == match[m])  // Condition 2: Part of the Match is Met
             {
@@ -445,14 +503,13 @@ void formatGrep(char *pattern)
             {
                 if (j == where[matchI])  // If the Index is the Same as Match
                 {
-                    ++matchI;
                     for (strI = 0; strI < strlen(pattern); ++strI, j++) 
                     {
                         if (buffer[j] == '\n')  // If The Shift Were to Have "\n"
                             break;
                         printf("\033[38;5;206m%c\033[0m", buffer[j]);  // PINK
                     }
-                    --j;  // For Next Iteration
+                    --j, ++matchI;;  // For Next Iteration
                 }
                 else
                     printf("%c", c);  // If it's Not the Match, Print Normal
