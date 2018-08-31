@@ -1,0 +1,3 @@
+end of the line is text
+text is start of line
+text

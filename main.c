@@ -1,3 +1,4 @@
+
 /* 
  * Welcome to nolGrep!
  * 
@@ -38,8 +39,8 @@ int *where;
 int argMatch[8]; 
 /*
  *argMatch used for matching argv[2]*
- Key: f, l, r, d, n, N, c
- Val: 0, 1, 2, 3, 4, 5, 6
+ Key: f, l, r, d, n, N, c, #
+ Val: 0, 1, 2, 3, 4, 5, 6, 7
  
  f : File is passed as argv[3]
  l : User inquires word left of grep match
@@ -47,19 +48,32 @@ int argMatch[8];
  d : Count Occurrences of each word(should work with l && r)
  n : Ignore Punctuation
  N : Ignore Capitalization
- w : Provide Word Count of Input
- c : Provide Character Count of Input
- b : Provide Bit Count of Input
+ c : Provide Quantifying Details
+ # : Shift for -r and -l
 */
 
 int main(int argc, char** argv) 
 {
     
+    // Buffer Is The Pointer To Read From, EVERYWHERE
     buffer = (char *)malloc(sizeof(char) * MAXBUF);
     
-    int i, j, isHelp;
+    // Testing Variables
+    int i, j;
     
-    isHelp = argHandler(argv[1]);  // Evaluate Arguments (!!)
+    /* Assessing Arguments */
+    
+    int isHelp, fill;
+    
+    if(argc > 2)
+        isHelp = argHandler(argv[1]);  // Evaluate Arguments (!!)
+    else
+    {
+        for (fill = 0; fill < sizeof(argMatch)/sizeof(int); ++fill)
+            argMatch[fill] = 0;
+    }
+    
+    /* End Assessing Arguments */
     
     printf("Shift Number Passed In: %d\n", argMatch[7]);
 
@@ -67,15 +81,24 @@ int main(int argc, char** argv)
     {
         return 0;
     }
-        
+
+    /* Fill Buffer */
+
     if (argMatch[0]) // Is there's a file?
-        inputConvert(argv[2]);  // If so, Send to Global Pointer (!!)
-    
+        inputConvert(argv[2]);  // If so, Send to Global Pointer
     else
         read(STDIN_FILENO, buffer, MAXBUF); // No File? Read Pipe / STDIN
+
+    /* End Fill Buffer */
+    
+    /* Counting Total Number Of Lines */
     
     countLines();
     printf("Total Lines = %d\n", tL);
+    
+    /* End Counting Total Number Of Lines */
+    
+    /* Complying With User's Argument Specification */
     
     if (argMatch[4])   // Was -n Passed as Argument?
         delSpec();     // If so, Delete All Unwanted ASCII values
@@ -91,6 +114,8 @@ int main(int argc, char** argv)
         printf("Non-Control Code Characters: %d\n", cC);
         printf("Bits: %d -- Bytes: %d\n", bC, bC/8);
     }
+    
+    /* End Complying With User's Argument Specification */
     
     /* Matching and Regex Argument Handling */
     
@@ -121,8 +146,11 @@ int main(int argc, char** argv)
         formatGrep(argv[2]);
     }  
     
+    /* End Matching and Regex Argument Handling */
+    
     free(buffer);
     free(lines);
+    free(where);
     return 0;
 }
 
@@ -147,7 +175,7 @@ int argHandler(char* arg)  // TESTED
     for (i = 0; i < sizeof(argMatch)/sizeof(int); ++i)
         argMatch[i] = 0;
     
-    /* Increment values that match argv[2] */
+    /* Increment values that match arg */
     // Key: f, l, r, d, n, N, c
     char temp[7] = "flrdnNc";
     
@@ -162,7 +190,7 @@ int argHandler(char* arg)  // TESTED
         /* Warning: Viewer Discretion -- Awful Reverse Base 10 Interpreter Algorithm */
         /* This Checks for Number of Characters User Would Like to Shift*/
         
-        if ((int)arg[j] > 47 && (int)arg[j] < 58)  // Between 1 And 9
+        if ((int)arg[j] > 47 && (int)arg[j] < 58)  // Between 0 And 9
         {
             ++powerTen;
             while ((int)arg[++j] > 47 && (int)arg[j] < 58)
@@ -213,7 +241,8 @@ void help(void)  // TESTED
 {
     /* Provides A Helpful Guide To User */
     // c, d, f, l, n, N, r
-    printf("\nWelcome to nolGrep! -- Your User-Friendly CLI Data Mining Command\n\n");
+    printf("\n------------------------ WELCOME TO NOLGREP ------------------------\n\n");
+    printf("Welcome to nolGrep! -- Your User-Friendly CLI Data Mining Command\n\n");
     printf("So you're having some troubles... Let me see if I can help!\n\n");
     printf("First and foremost, you MUST use this syntax:\n");
     printf("Usage: nolGrep [ARGUMENTS (optional)] [FILE (optional)] [PATTERN]\n\n");
@@ -231,17 +260,42 @@ void help(void)  // TESTED
     printf("  -l  \t Grab the word left of the pattern; Works with -d.\n");
     printf("  -r  \t Grab the word right of the pattern; Works with -d.\n");
     printf("  -n  \t Ignore punctuation.\n");
-    printf("  -N  \t Ignore capitalization sensitivity.\n\n");
+    printf("  -N  \t Ignore capitalization sensitivity.\n");
+    printf("  -#  \t The number used with -r or -l for context character push\n\n");
     
     printf("Miscellaneous:\n");
     printf("  -c  \t Print the Word, Character, and Byte Count of STDIN\n\n");
 
     printf("Examples of usage:\n");
     printf("  Direct File: $ nolGrep -f /tmp/example.txt findMe\n");
-    printf("  Pipe Line:   $ cat /tmp/example.txt | nolGrep -drN findMe\n\n");
+    printf("  Pipe Line:   $ cat /tmp/example.txt | nolGrep -drN findMe\n\n\n");
     
-    printf("Well I hope you enjoy my program!\n");
-    printf("Please report any bugs to nolanrudolph1@gmail.com\n\n");
+    printf("--------------- IF YOU'RE PLAYING THE $2 DEBUG GAME ---------------\n\n");
+    printf("I award your bravery... Let me lay down some guidelines:\n\n");
+    printf("1.) No Double Jeopardy\n\n");
+    printf("    So you found a bug... Nice! However, if you found that \n"
+           "    'runMe -f /tmp/test.txt *!example' bugs, I'm not giving you\n "
+           "   credit if you send me 'runMe -f /tmp/test.txt *!exampleTwo\n "
+           "   doesn't work either!'\n\n");
+    printf("2.) Don't Purposefully Pass Parameters That Limit Your Search\n\n");
+    printf("    If you wanted to find 'example.Pattern', passing the argument\n"
+           "    -n would make it impossible. This is not a bug, just ignorance.\n\n");
+    printf("3.) Don't Pass Max Buffer Space Allocation\n\n"
+           "    When creating this software, I purposefully set a max line\n"
+           "    buffer of 100000 and a max character buffer of 1000000. You\n"
+           "    will receive a 'Segmentation Fault: Core Dumped' notification.\n"
+           "    If you receive a 'Core Dump' error without surpassing my max\n"
+           "    line and max character buffer, you sir found a bug.\n\n");
+    printf("4.) Adhere to Syntactical Usage Defined on Line 4 of --help.\n\n");
+    printf("    Make sure you're using the right syntax. You might find that\n"
+           "    the command 'nolGrep -fcl3 examplePattern /tmp/example.txt'\n"
+           "    does absolutely nothing. That's because the syntax should've\n"
+           "    been: 'nolGrep -fcl3 /tmp/example.txt examplePattern'\n\n");
+    printf("Well that concludes the guidelines. Anything else is fair game!\n"
+           "When you find the bug, shoot me a venmo request @Nolan-Rudolph-1 \n"
+           "for $2, with the command line prompted bug in the 'What's it for?'\n"
+           "section. Happy debugging!!\n\n");
+    printf("-------------------------------------------------------------------\n\n");
     return;
 }
 
