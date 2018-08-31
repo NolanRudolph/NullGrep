@@ -28,11 +28,11 @@ void totalMatches(void);
 void formatGrep(char *);
 void contextFormat(char *);
 
-static tL = 0;  // Total Lines
-static tM = 0;  // Total Matches
-static wC = 0;  // Total Words
-static cC = 0;  // Total Characters
-static bC = 0;  // Total Bits
+static int tL = 0;  // Total Lines
+static int tM = 0;  // Total Matches
+static int wC = 0;  // Total Words
+static int cC = 0;  // Total Characters
+static int bC = 0;  // Total Bits
 char *buffer;  // Main Read Pointer
 int *lines;  // MUST Initialize After count()
 int *where;
@@ -158,7 +158,8 @@ void countLines(void)  // TESTED
 {
     int i = 0;
     while (i < strlen(buffer))  // Stop Once i Reaches buffer's Length
-        if (buffer[i++] == '\n' && tL++ != MAXLINE);  // Increments i and tL
+        if (buffer[i++] == '\n' && tL++ != MAXLINE)  // Increments i and tL
+            ;  
 }
 
 int argHandler(char* arg)  // TESTED
