@@ -400,15 +400,48 @@ void match(char *match)
                 if (argMatch[1])  // If -l (Left Shift) Parameter
                 {
                     
-                    
-                    
-                    
-                    
                     tempK = k - strlen(match);
                     temp = k - strlen(match) - argMatch[7];
                     
                     /* Finding Good Starting Spot */
                     for (tempR = 0 ; --tempK >= temp ; )
+                    {
+                        if ((nC = buffer[tempK]) == '\n')
+                            break;
+                        
+                        if ((nC = buffer[tempK]) > 96 && nC < 123 || 
+                                nC > 64 && nC < 91)
+                            tempR = tempK;
+
+                    }
+                    
+                    if (tempR)  // If We Have A Good Place, Let's Evaluate Word
+                    {
+                        printf("buffer[tempR] == %c\n", buffer[tempR]);
+                        while((nC = buffer[--tempR]) > 96 && nC < 123 || 
+                                nC > 64 && nC < 91)
+                            ;
+                        ++tempR;
+                        where[matchI++] = tempR;  // Set to Beginning of Word
+                    }
+                    else        // We Never Found A Place, Back To Normal Grep
+                    {
+                        where[matchI++] = k - strlen(match);
+                    }
+                    printf("\n");
+                }
+                /* End Left Shift Grep */
+                
+                
+                /* Start Right Shift Grep */
+                else if (argMatch[2])  // If -r (Right Shift) Parameter
+                {
+                    // if no match: where = k - strlen(match);
+                    tempK = k;
+                    temp = k + argMatch[7];
+                    
+                    /* Finding Good Starting Spot */
+                    for (tempR = 0 ; temp >= ++tempK ; )
                     {
                         if ((nC = buffer[tempK]) == '\n')
                             break;
@@ -432,17 +465,6 @@ void match(char *match)
                         where[matchI++] = k - strlen(match);
                     }
                     printf("\n");
-                }
-                /* End Left Shift Grep */
-                
-                
-                
-                
-                
-                /* Start Right Shift Grep */
-                else if (argMatch[2])  // If -r (Right Shift) Parameter
-                {
-                    where[matchI++] = k - strlen(match) + argMatch[7];
                 }
                 /* End Right Shift Grep */
                 
