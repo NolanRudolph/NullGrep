@@ -123,7 +123,7 @@ int main(int argc, char** argv)
     
     // Now We Can Initialize lines' Length Since tL is Figuratively Constant
     lines = (int *)malloc(sizeof(int) * tL);
-    where = (int *)malloc(sizeof(int) * MAXBUF);  // Be Weary: 0.002 GB space
+    where = (int *)malloc(sizeof(int) * MAXBUF * 2);  // Be Weary: 0.004 GB space
     
     /* Different Argument Routes */
     if (argc == 2)         // User Only Gives Pattern
@@ -260,8 +260,8 @@ void help(void)  // TESTED
     
     printf("Regexp add-ons:\n");
     printf("  -d  \t Count how many times a pattern appears.\n");
-    printf("  -l  \t Grab the word left of the pattern; Works with -d.\n");
-    printf("  -r  \t Grab the word right of the pattern; Works with -d.\n");
+    printf("  -l  \t Grab the word -# characters left of PATTERN; Works with -d.\n");
+    printf("  -r  \t Grab the word -# characters right of PATTERN; Works with -d.\n");
     printf("  -n  \t Ignore punctuation.\n");
     printf("  -N  \t Ignore capitalization sensitivity.\n");
     printf("  -#  \t The number used with -r or -l for context character push\n\n");
@@ -272,6 +272,16 @@ void help(void)  // TESTED
     printf("Examples of usage:\n");
     printf("  Direct File: $ nolGrep -f /tmp/example.txt findMe\n");
     printf("  Pipe Line:   $ cat /tmp/example.txt | nolGrep -drN findMe\n\n\n");
+    
+    printf("EXTRA NOTES:\n");
+    printf("  1.) If context shifting, crossing a line break will result in the\n"
+           "      original highlighting of PATTERN.\n\n");
+    printf("  2.) If you context shift left/right to a non-alphabetical character,\n"
+           "      the program will push you left/right respectively until you\n"
+           "      come to an end line (at which see 1.) or you reach another \n"
+           "      word. Therefore, please be precise in your character shifts.\n\n");
+           
+            
     
     printf("--------------- IF YOU'RE PLAYING THE $2 DEBUG GAME ---------------\n\n");
     printf("I award your bravery... Let me lay down some guidelines:\n\n");
@@ -406,7 +416,7 @@ void match(char *match)
                     for (tempR = 0 ; --tempK >= temp ; )
                     {
                         if ((nC = buffer[tempK]) == '\n')
-                            break;
+                            goto normyGrepL;
                         
                         if ((nC = buffer[tempK]) > 96 && nC < 123 || 
                                 nC > 64 && nC < 91)
@@ -416,18 +426,24 @@ void match(char *match)
                     
                     if (tempR)  // If We Have A Good Place, Let's Evaluate Word
                     {
-                        printf("buffer[tempR] == %c\n", buffer[tempR]);
                         while((nC = buffer[--tempR]) > 96 && nC < 123 || 
                                 nC > 64 && nC < 91)
                             ;
                         ++tempR;
                         where[matchI++] = tempR;  // Set to Beginning of Word
+                        
+                        while((nC = buffer[++tempR]) > 96 && nC < 123 ||
+                                nC > 64 && nC < 91)
+                            ;
+                        --tempR;
+                        where[matchI++] = tempR;  // Set to End of Word
                     }
                     else        // We Never Found A Place, Back To Normal Grep
                     {
+                        normyGrepL:
                         where[matchI++] = k - strlen(match);
+                        where[matchI++] = k - 1;
                     }
-                    printf("\n");
                 }
                 /* End Left Shift Grep */
                 
@@ -443,7 +459,7 @@ void match(char *match)
                     for (tempR = 0 ; temp >= ++tempK ; )
                     {
                         if ((nC = buffer[tempK]) == '\n')
-                            break;
+                            goto normyGrepR;
                         
                         if ((nC = buffer[tempK]) > 96 && nC < 123 || 
                                 nC > 64 && nC < 91)
@@ -458,12 +474,19 @@ void match(char *match)
                             ;
                         ++tempR;
                         where[matchI++] = tempR;  // Set to Beginning of Word
+                        
+                        while((nC = buffer[++tempR]) > 96 && nC < 123 ||
+                                nC > 64 && nC < 91)
+                            ;
+                        --tempR;
+                        where[matchI++] = tempR;  // Set to End of Word
                     }
                     else        // We Never Found A Place, Back To Normal Grep
                     {
+                        normyGrepR:
                         where[matchI++] = k - strlen(match);
+                        where[matchI++] = k - 1;
                     }
-                    printf("\n");
                 }
                 /* End Right Shift Grep */
                 
@@ -471,6 +494,7 @@ void match(char *match)
                 else  
                 {
                     where[matchI++] = k - strlen(match);
+                    where[matchI++] = k - 1;
                 }
                 /* End Normal Grep */
                 
@@ -512,7 +536,7 @@ void totalMatches(void)
 void formatGrep(char *pattern)
 {
     /* Count Effective Lines */
-    int i;
+    int i, tempS, tempE;
     int j = 0;
     int matchI = 0;
     int strI;
@@ -526,15 +550,14 @@ void formatGrep(char *pattern)
             printf("Line %d: ", i + 1);
             for ( ; (c = buffer[j]) != '\n'; ++j) 
             {
-                if (j == where[matchI])  // If the Index is the Same as Match
+                if (j == (tempS = where[matchI]))  // If the Index is the Same as Match
                 {
-                    for (strI = 0; strI < strlen(pattern); ++strI, j++) 
+                    tempE = where[++matchI];
+                    for ( ; tempS <= tempE ; ++tempS, ++j) 
                     {
-                        if (buffer[j] == '\n')  // If The Shift Were to Have "\n"
-                            break;
                         printf("\033[38;5;206m%c\033[0m", buffer[j]);  // PINK
                     }
-                    --j, ++matchI;;  // For Next Iteration
+                    --j, ++matchI;  // For Next Iteration
                 }
                 else
                     printf("%c", c);  // If it's Not the Match, Print Normal
