@@ -1,4 +1,3 @@
-
 /* 
  * Welcome to nolGrep!
  * 
@@ -18,7 +17,7 @@
 #define MAXLINE 100000
 void inputConvert(char[]);
 void countLines(void);
-int argHandler(char *);
+void argHandler(char *);
 void help(void);
 void delSpec(void);
 void transUpLow(void);
@@ -63,15 +62,22 @@ int main(int argc, char** argv)
     
     /* Assessing Arguments */
     
-    int isHelp, fill;
+    int fill;
     
-    isHelp = argHandler(argv[1]);  // Evaluate Arguments (!!)
-        
-    if (isHelp && argc == 2)  // Needed for --help
+    /* If Issues Generic Command Help Requests */
+    
+    if (strcmp(argv[1], "help") == 0 || strcmp(argv[1], "--help") == 0 || 
+            strcmp(argv[1], "-h") == 0)
     {
+        help();
         return 0;
     }
-    if (!isHelp && argc == 2)
+    
+    /* End If Issues Generic Command Help Requests */
+    
+    argHandler(argv[1]);  // Evaluate Arguments (!!)
+        
+    if (argc == 2)
     {
         for (fill = 0; fill < sizeof(argMatch)/sizeof(int); ++fill)
             argMatch[fill] = 0;
@@ -95,7 +101,6 @@ int main(int argc, char** argv)
     /* Counting Total Number Of Lines */
     
     countLines();
-    printf("Total Lines = %d\n", tL);
     
     /* End Counting Total Number Of Lines */
     
@@ -111,10 +116,10 @@ int main(int argc, char** argv)
     if (argMatch[6])   // Was -c Passed As Argument?
     {                  // If so, List All Quantifying Variables
         count();
-        printf("\nLines: %d\n", tL);
+        printf("Total Lines = %d\n", tL);
         printf("Words: %d\n", wC);
         printf("Non-Control Code Characters: %d\n", cC);
-        printf("Bits: %d -- Bytes: %d\n", bC, bC/8);
+        printf("Bytes: %d\n", bC/8);
     }
     
     /* End Complying With User's Argument Specification */
@@ -124,7 +129,9 @@ int main(int argc, char** argv)
     
     // Now We Can Initialize lines' Length Since tL is Figuratively Constant
     lines = (int *)malloc(sizeof(int) * tL);
-    where = (int *)malloc(sizeof(int) * MAXBUF);  // Be Weary: 0.002 GB space
+    
+    // Specific Space Accounts for a Document of The Same Character Match 1M Times
+    where = (int *)malloc(sizeof(int) * MAXBUF * 2);  // Be Weary: 0.004 GB space
     
     /* Different Argument Routes */
     if (argc == 2)         // User Only Gives Pattern
@@ -165,14 +172,9 @@ void countLines(void)  // TESTED
             ;  
 }
 
-int argHandler(char* arg)  // TESTED
+void argHandler(char* arg)  // TESTED
 {
     /* Initialize all values of argMatch to 0 */
-    if (strcmp(arg, "--help") == 0 || strcmp(arg, "-h") == 0)
-    {
-        help();
-        return 1;
-    }
         
     int i, j, k;
     
@@ -238,7 +240,6 @@ int argHandler(char* arg)  // TESTED
             }
         }
     }
-    return 0;
 }
 
 void help(void)  // TESTED
@@ -261,8 +262,8 @@ void help(void)  // TESTED
     
     printf("Regexp add-ons:\n");
     printf("  -d  \t Count how many times a pattern appears.\n");
-    printf("  -l  \t Grab the word left of the pattern; Works with -d.\n");
-    printf("  -r  \t Grab the word right of the pattern; Works with -d.\n");
+    printf("  -l  \t Grab the word -# characters left of PATTERN; Works with -d.\n");
+    printf("  -r  \t Grab the word -# characters right of PATTERN; Works with -d.\n");
     printf("  -n  \t Ignore punctuation.\n");
     printf("  -N  \t Ignore capitalization sensitivity.\n");
     printf("  -#  \t The number used with -r or -l for context character push\n\n");
@@ -272,7 +273,19 @@ void help(void)  // TESTED
 
     printf("Examples of usage:\n");
     printf("  Direct File: $ nolGrep -f /tmp/example.txt findMe\n");
-    printf("  Pipe Line:   $ cat /tmp/example.txt | nolGrep -drN findMe\n\n\n");
+    printf("  Pipe Line:   $ cat /tmp/example.txt | nolGrep -drN findMe\n\n");
+    
+    printf("EXTRA NOTES:\n");
+    printf("  1.) Context shifting from left/right begins at the left/right\n"
+           "      most character of PATTERN, respectively.\n");
+    printf("  2.) If context shifting, crossing a line break will result in the\n"
+           "      original highlighting of PATTERN.\n");
+    printf("  3.) If you context shift left/right to a non-alphabetical character,\n"
+           "      the program will push you left/right respectively until you\n"
+           "      come to an end line (at which see 2.) or you reach another \n"
+           "      word. Therefore, please be precise in your character shifts.\n\n");
+           
+            
     
     printf("--------------- IF YOU'RE PLAYING THE $2 DEBUG GAME ---------------\n\n");
     printf("I award your bravery... Let me lay down some guidelines:\n\n");
@@ -292,9 +305,9 @@ void help(void)  // TESTED
            "    line and max character buffer, you sir found a bug.\n\n");
     printf("4.) Adhere to Syntactical Usage Defined on Line 4 of --help.\n\n");
     printf("    Make sure you're using the right syntax. You might find that\n"
-           "    the command 'nolGrep -fcl3 examplePattern /tmp/example.txt'\n"
+           "    the command 'nolGrep -fcr3 examplePattern /tmp/example.txt'\n"
            "    does absolutely nothing. That's because the syntax should've\n"
-           "    been: 'nolGrep -fcl3 /tmp/example.txt examplePattern'\n\n");
+           "    been: 'nolGrep -fcr3 /tmp/example.txt examplePattern'\n\n");
     printf("Well that concludes the guidelines. Anything else is fair game!\n"
            "When you find the bug, shoot me a venmo request @Nolan-Rudolph-1 \n"
            "for $2, with the command line prompted bug in the 'What's it for?'\n"
@@ -385,7 +398,7 @@ void match(char *match)
     char c;
     
     /* Grep Shift Variables */
-    int temp, tempK, nC, remember;
+    int temp, tempK, nC, tempR;
     
     for (j = 0; j < tL; ++j)  // Nest 0 : Lines of Files
     {
@@ -400,45 +413,84 @@ void match(char *match)
                 if (argMatch[1])  // If -l (Left Shift) Parameter
                 {
                     
-                    // word1 buffer word2   $ runMe -l5 buffer
-                    // ^     ^      ^
-                    //temp tempK
-                    
                     tempK = k - strlen(match);
                     temp = k - strlen(match) - argMatch[7];
                     
-                    for (remember = 0 ; --tempK >= temp ; )
+                    /* Finding Good Starting Spot */
+                    for (tempR = 0 ; --tempK >= temp ; )
                     {
                         if ((nC = buffer[tempK]) == '\n')
-                        {
-                            break;
-                        }
-                        if ((nC = buffer[tempK]) > 96 && nC < 123)
-                        {
-//                            remember = tempK;
-                            printf("Found Match: %c\n", nC);
-                            remember = tempK;
-                        }
-                        else
-                        {
-                            printf("Could not find match.\n");
-                        }
+                            goto normyGrepL;
+                        
+                        if ((nC = buffer[tempK]) > 96 && nC < 123 || 
+                                nC > 64 && nC < 91)
+                            tempR = tempK;
 
                     }
-                    if (remember)  // This Is a Good Place, let formatGrep know
-                        where[matchI++] = remember;
-                    else           // We Never Found A Place, Back To Normal Grep
+                    
+                    if (tempR)  // If We Have A Good Place, Let's Evaluate Word
                     {
-                        where[matchI++] = k - strlen(match);
+                        while((nC = buffer[--tempR]) > 96 && nC < 123 || 
+                                nC > 64 && nC < 91)
+                            ;
+                        ++tempR;
+                        where[matchI++] = tempR;  // Set to Beginning of Word
+                        
+                        while((nC = buffer[++tempR]) > 96 && nC < 123 ||
+                                nC > 64 && nC < 91)
+                            ;
+                        --tempR;
+                        where[matchI++] = tempR;  // Set to End of Word
                     }
-                    printf("\n");
+                    else        // We Never Found A Place, Back To Normal Grep
+                    {
+                        normyGrepL:
+                        where[matchI++] = k - strlen(match);
+                        where[matchI++] = k - 1;
+                    }
                 }
                 /* End Left Shift Grep */
+                
                 
                 /* Start Right Shift Grep */
                 else if (argMatch[2])  // If -r (Right Shift) Parameter
                 {
-                    where[matchI++] = k - strlen(match) + argMatch[7];
+                    // if no match: where = k - strlen(match);
+                    tempK = k;
+                    temp = k + argMatch[7];
+                    
+                    /* Finding Good Starting Spot */
+                    for (tempR = 0 ; temp >= ++tempK ; )
+                    {
+                        if ((nC = buffer[tempK]) == '\n')
+                            goto normyGrepR;
+                        
+                        if ((nC = buffer[tempK]) > 96 && nC < 123 || 
+                                nC > 64 && nC < 91)
+                            tempR = tempK;
+
+                    }
+                    
+                    if (tempR)  // If We Have A Good Place, Let's Evaluate Word
+                    {
+                        while((nC = buffer[--tempR]) > 96 && nC < 123 || 
+                                nC > 64 && nC < 91)
+                            ;
+                        ++tempR;
+                        where[matchI++] = tempR;  // Set to Beginning of Word
+                        
+                        while((nC = buffer[++tempR]) > 96 && nC < 123 ||
+                                nC > 64 && nC < 91)
+                            ;
+                        --tempR;
+                        where[matchI++] = tempR;  // Set to End of Word
+                    }
+                    else        // We Never Found A Place, Back To Normal Grep
+                    {
+                        normyGrepR:
+                        where[matchI++] = k - strlen(match);
+                        where[matchI++] = k - 1;
+                    }
                 }
                 /* End Right Shift Grep */
                 
@@ -446,6 +498,7 @@ void match(char *match)
                 else  
                 {
                     where[matchI++] = k - strlen(match);
+                    where[matchI++] = k - 1;
                 }
                 /* End Normal Grep */
                 
@@ -487,7 +540,7 @@ void totalMatches(void)
 void formatGrep(char *pattern)
 {
     /* Count Effective Lines */
-    int i;
+    int i, tempS, tempE;
     int j = 0;
     int matchI = 0;
     int strI;
@@ -501,15 +554,14 @@ void formatGrep(char *pattern)
             printf("Line %d: ", i + 1);
             for ( ; (c = buffer[j]) != '\n'; ++j) 
             {
-                if (j == where[matchI])  // If the Index is the Same as Match
+                if (j == (tempS = where[matchI]))  // If the Index is the Same as Match
                 {
-                    for (strI = 0; strI < strlen(pattern); ++strI, j++) 
+                    tempE = where[++matchI];
+                    for ( ; tempS <= tempE ; ++tempS, ++j) 
                     {
-                        if (buffer[j] == '\n')  // If The Shift Were to Have "\n"
-                            break;
                         printf("\033[38;5;206m%c\033[0m", buffer[j]);  // PINK
                     }
-                    --j, ++matchI;;  // For Next Iteration
+                    --j, ++matchI;  // For Next Iteration
                 }
                 else
                     printf("%c", c);  // If it's Not the Match, Print Normal
