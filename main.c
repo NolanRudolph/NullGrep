@@ -385,7 +385,7 @@ void match(char *match)
     char c;
     
     /* Grep Shift Variables */
-    int temp, tempK, nC, remember;
+    int temp, tempK, nC, tempR;
     
     for (j = 0; j < tL; ++j)  // Nest 0 : Lines of Files
     {
@@ -400,40 +400,44 @@ void match(char *match)
                 if (argMatch[1])  // If -l (Left Shift) Parameter
                 {
                     
-                    // word1 buffer word2   $ runMe -l5 buffer
-                    // ^     ^      ^
-                    //temp tempK
+                    
+                    
+                    
                     
                     tempK = k - strlen(match);
                     temp = k - strlen(match) - argMatch[7];
                     
-                    for (remember = 0 ; --tempK >= temp ; )
+                    /* Finding Good Starting Spot */
+                    for (tempR = 0 ; --tempK >= temp ; )
                     {
                         if ((nC = buffer[tempK]) == '\n')
-                        {
                             break;
-                        }
-                        if ((nC = buffer[tempK]) > 96 && nC < 123)
-                        {
-//                            remember = tempK;
-                            printf("Found Match: %c\n", nC);
-                            remember = tempK;
-                        }
-                        else
-                        {
-                            printf("Could not find match.\n");
-                        }
+                        
+                        if ((nC = buffer[tempK]) > 96 && nC < 123 || 
+                                nC > 64 && nC < 91)
+                            tempR = tempK;
 
                     }
-                    if (remember)  // This Is a Good Place, let formatGrep know
-                        where[matchI++] = remember;
-                    else           // We Never Found A Place, Back To Normal Grep
+                    
+                    if (tempR)  // If We Have A Good Place, Let's Evaluate Word
+                    {
+                        while((nC = buffer[--tempR]) > 96 && nC < 123 || 
+                                nC > 64 && nC < 91)
+                            ;
+                        ++tempR;
+                        where[matchI++] = tempR;  // Set to Beginning of Word
+                    }
+                    else        // We Never Found A Place, Back To Normal Grep
                     {
                         where[matchI++] = k - strlen(match);
                     }
                     printf("\n");
                 }
                 /* End Left Shift Grep */
+                
+                
+                
+                
                 
                 /* Start Right Shift Grep */
                 else if (argMatch[2])  // If -r (Right Shift) Parameter
