@@ -19,7 +19,6 @@ void inputConvert(char[]);
 void countLines(void);
 void argHandler(char *);
 void help(void);
-void delSpec(void);
 void transUpLow(void);
 void count(void);
 void match(char *);
@@ -123,9 +122,6 @@ int main(int argc, char** argv)
     
     
     /* Complying With User's Argument Specification */
-    
-    if (argMatch[4])   // Was -n Passed as Argument?
-        delSpec();     // If so, Delete All Unwanted ASCII values
     
     if (argMatch[5])   // Was -N Passed As Argument?
         transUpLow();  // If so, Translate All Characters to Lowercase
@@ -300,7 +296,6 @@ void help(void)  // TESTED
     printf("  -d  \t Count how many times a pattern appears.\n");
     printf("  -l  \t Grab the word -# characters left of PATTERN; Works with -d.\n");
     printf("  -r  \t Grab the word -# characters right of PATTERN; Works with -d.\n");
-    printf("  -n  \t Ignore punctuation.\n");
     printf("  -N  \t Ignore capitalization sensitivity.\n");
     printf("  -#  \t The number used with -r or -l for context character push\n\n");
     
@@ -337,29 +332,6 @@ void inputConvert(char file[])  // TESTED
     while((c = getc(fp)) != EOF)
     {
         buffer[i++] = c;  // Set pre-incremented buffer address to character
-    }
-    return;
-}
-
-void delSpec(void)  // TESTED
-{
-    /* Most Confusing Function Yet... 
-     * All there is to know is that it uses a backtrack as
-     * a relay point to compensate for skipped characters*/
-    
-    int i, c, temp, backTrack;
-    
-    backTrack = 0;
-    for (i = 0; i < strlen(buffer) + backTrack; ++i)
-    {
-        if (((c = (int)buffer[i]) > 32 && c < 48) || (c > 90 && c < 97) ||
-                (c > 57 && c < 65))  // Skip Unwanted ASCII Symbol Values
-        {
-            backTrack++;
-            continue;
-        }
-
-        buffer[i - backTrack] = buffer[i];  // Organize for fluidity
     }
     return;
 }
