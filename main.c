@@ -13,8 +13,8 @@
 #include <unistd.h>
 #include <regex.h>
 #include <math.h>
-#define MAXBUF 1000000
-#define MAXLINE 100000
+#define MAXBUF 10000000
+#define MAXLINE 1000000
 void inputConvert(char[]);
 void countLines(void);
 void argHandler(char *);
@@ -26,6 +26,8 @@ void match(char *);
 void totalMatches(void);
 void formatGrep(char *);
 void contextFormat(char *);
+void countOccur(void);
+void insert(char[]);
 
 static int tL = 0;  // Total Lines
 static int tM = 0;  // Total Matches
@@ -33,9 +35,13 @@ static int wC = 0;  // Total Words
 static int cC = 0;  // Total Characters
 static int bC = 0;  // Total Bits
 char *buffer;  // Main Read Pointer
+char *toCount;
+char *single;
 int *lines;  // MUST Initialize After count()
 int *where;
 int argMatch[8]; 
+struct singleWord;
+struct singleWord *hashMap[MAXBUF];
 /*
  *argMatch used for matching argv[2]*
  Key: f, l, r, d, n, N, c, #
@@ -50,12 +56,23 @@ int argMatch[8];
  c : Provide Quantifying Details
  # : Shift for -r and -l
 */
+struct singleWord
+{
+    char word[100];
+    int occur;
+};
 
 int main(int argc, char** argv) 
 {
     
     // Buffer Is The Pointer To Read From, EVERYWHERE
     buffer = (char *)malloc(sizeof(char) * MAXBUF);
+    
+    // toCount is Used for -d Aspect of Arguments, Written to in formatGrep()
+    toCount = (char *)malloc(sizeof(char) * MAXBUF);
+    
+    // single is Used for -d Aspect of Arguments, Written to in singleOccurence()
+    single = (char *)malloc(sizeof(char) * MAXBUF);
     
     // Testing Variables
     int i, j;
@@ -156,9 +173,26 @@ int main(int argc, char** argv)
         formatGrep(argv[2]);
     }  
     
+    /* NEW TESTING */
+    
+    countOccur();
+    
+    int hashIndex = 0;
+    while(hashMap[hashIndex] != NULL)
+    {
+        printf("Word: %s\n", hashMap[hashIndex] -> word);
+        printf("Count: %d\n\n", hashMap[hashIndex] -> occur);
+        ++hashIndex;
+    }
+    printf("DONE\n");
+    
+    /* END NEW TESTING */
+    
     /* End Matching and Regex Argument Handling */
     
     free(buffer);
+    free(toCount);
+    free(single);
     free(lines);
     free(where);
     return 0;
@@ -291,8 +325,8 @@ void help(void)  // TESTED
     printf("I award your bravery... Let me lay down some guidelines:\n\n");
     printf("1.) No Double Jeopardy\n\n");
     printf("    So you found a bug... Nice! However, if you found that \n"
-           "    'runMe -f /tmp/test.txt *!example' bugs, I'm not giving you\n "
-           "   credit if you send me 'runMe -f /tmp/test.txt *!exampleTwo\n "
+           "    'nolGrep -f /tmp/test.txt *!example' bugs, I'm not giving you\n "
+           "   credit if you send me 'nolGrep -f /tmp/test.txt *!exampleTwo\n "
            "   doesn't work either!'\n\n");
     printf("2.) Don't Purposefully Pass Parameters That Limit Your Search\n\n");
     printf("    If you wanted to find 'example.Pattern', passing the argument\n"
@@ -543,7 +577,7 @@ void formatGrep(char *pattern)
     int i, tempS, tempE;
     int j = 0;
     int matchI = 0;
-    int strI;
+    int countI = 0;
     char c;
     
     int nCounter = 0;
@@ -559,9 +593,11 @@ void formatGrep(char *pattern)
                     tempE = where[++matchI];
                     for ( ; tempS <= tempE ; ++tempS, ++j) 
                     {
+                        toCount[countI++] = buffer[j];
                         printf("\033[38;5;206m%c\033[0m", buffer[j]);  // PINK
                     }
                     --j, ++matchI;  // For Next Iteration
+                    toCount[countI++] = '\n';
                 }
                 else
                     printf("%c", c);  // If it's Not the Match, Print Normal
@@ -578,3 +614,62 @@ void formatGrep(char *pattern)
     printf("\n");
     return;
 }
+
+void countOccur(void)
+{
+    int countI = 0;
+    int tempI = 0;
+    int found, hashIndex;
+    char temp[100];
+    char c;
+    while (countI != strlen(toCount))
+    {      
+        for (tempI = 0, memset(temp, 0, 100); (c = toCount[countI++]) != '\n'; ++tempI)
+        {
+            temp[tempI] = c;
+        }
+        temp[++tempI] = '\0';
+        
+        hashIndex = 0;
+        found = 0;
+        
+        struct singleWord *cWord;
+        cWord = (struct singleWord *)malloc(sizeof(struct singleWord *));
+        
+        while ((cWord = hashMap[hashIndex]) != NULL)
+        {
+            if (strcmp(cWord -> word, temp) == 0)
+            {
+                
+                ++(cWord -> occur);
+                found = 1;
+                break;
+            }
+            ++hashIndex;
+        }
+        
+        if (!found)
+        {
+            insert(temp);
+        }
+    }
+}
+
+void insert(char wordIn[100])
+{
+    struct singleWord *toInsert = (struct singleWord *)malloc(sizeof(struct singleWord *));
+    int i;
+    for (i = 0; wordIn[i] != '\0'; ++i)
+        toInsert -> word[i] = wordIn[i];
+    toInsert -> occur = 1;
+    
+    int j = 0;
+    int hashIndex = 0;
+    while (hashMap[hashIndex] != NULL && ++j != MAXBUF)
+    {
+        ++hashIndex;
+    }
+    
+    hashMap[hashIndex] = toInsert;
+    return;
+}   
