@@ -136,7 +136,7 @@ int main(int argc, char** argv)
         printf("Total Lines = %d\n", tL);
         printf("Words: %d\n", wC);
         printf("Non-Control Code Characters: %d\n", cC);
-        printf("Bytes: %d\n", bC/8);
+        printf("Bytes: %d\n\n", bC/8);
     }
     
     /* End Complying With User's Argument Specification */
@@ -175,16 +175,18 @@ int main(int argc, char** argv)
     
     /* NEW TESTING */
     
-    countOccur();
-    
-    int hashIndex = 0;
-    while(hashMap[hashIndex] != NULL)
+    if (argMatch[3])
     {
-        printf("Word: %s\n", hashMap[hashIndex] -> word);
-        printf("Count: %d\n\n", hashMap[hashIndex] -> occur);
-        ++hashIndex;
+        countOccur();
+
+        int hashIndex = 0;
+        while(hashMap[hashIndex] != NULL)
+        {
+            printf("Word: %s\n", hashMap[hashIndex] -> word);
+            printf("Occurrences: %d\n\n", hashMap[hashIndex] -> occur);
+            ++hashIndex;
+        }
     }
-    printf("DONE\n");
     
     /* END NEW TESTING */
     
@@ -280,7 +282,7 @@ void help(void)  // TESTED
 {
     /* Provides A Helpful Guide To User */
     // c, d, f, l, n, N, r
-    printf("\n------------------------ WELCOME TO NOLGREP ------------------------\n\n");
+    printf("\n\n------------------------ WELCOME TO NOLGREP ------------------------\n\n");
     printf("Welcome to nolGrep! -- Your User-Friendly CLI Data Mining Command\n\n");
     printf("So you're having some troubles... Let me see if I can help!\n\n");
     printf("First and foremost, you MUST use this syntax:\n");
@@ -318,35 +320,10 @@ void help(void)  // TESTED
            "      the program will push you left/right respectively until you\n"
            "      come to an end line (at which see 2.) or you reach another \n"
            "      word. Therefore, please be precise in your character shifts.\n\n");
-           
-            
-    
-    printf("--------------- IF YOU'RE PLAYING THE $2 DEBUG GAME ---------------\n\n");
-    printf("I award your bravery... Let me lay down some guidelines:\n\n");
-    printf("1.) No Double Jeopardy\n\n");
-    printf("    So you found a bug... Nice! However, if you found that \n"
-           "    'nolGrep -f /tmp/test.txt *!example' bugs, I'm not giving you\n "
-           "   credit if you send me 'nolGrep -f /tmp/test.txt *!exampleTwo\n "
-           "   doesn't work either!'\n\n");
-    printf("2.) Don't Purposefully Pass Parameters That Limit Your Search\n\n");
-    printf("    If you wanted to find 'example.Pattern', passing the argument\n"
-           "    -n would make it impossible. This is not a bug, just ignorance.\n\n");
-    printf("3.) Don't Pass Max Buffer Space Allocation\n\n"
-           "    When creating this software, I purposefully set a max line\n"
-           "    buffer of 100000 and a max character buffer of 1000000. You\n"
-           "    will receive a 'Segmentation Fault: Core Dumped' notification.\n"
-           "    If you receive a 'Core Dump' error without surpassing my max\n"
-           "    line and max character buffer, you sir found a bug.\n\n");
-    printf("4.) Adhere to Syntactical Usage Defined on Line 4 of --help.\n\n");
-    printf("    Make sure you're using the right syntax. You might find that\n"
-           "    the command 'nolGrep -fcr3 examplePattern /tmp/example.txt'\n"
-           "    does absolutely nothing. That's because the syntax should've\n"
-           "    been: 'nolGrep -fcr3 /tmp/example.txt examplePattern'\n\n");
-    printf("Well that concludes the guidelines. Anything else is fair game!\n"
-           "When you find the bug, shoot me a venmo request @Nolan-Rudolph-1 \n"
-           "for $2, with the command line prompted bug in the 'What's it for?'\n"
-           "section. Happy debugging!!\n\n");
-    printf("-------------------------------------------------------------------\n\n");
+    printf("Thanks for using my program! Hope it treats you well!\n");
+    printf("Please report bugs to: nolanrudolph1@gmail.com\n");
+    printf("\n--------------------------------------------------------------------\n\n");
+
     return;
 }
 
