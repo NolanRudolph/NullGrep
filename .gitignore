@@ -1,3 +1,4 @@
+*.txt
 nbproject/private/
 build/
 nbbuild/
